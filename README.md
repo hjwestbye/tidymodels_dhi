@@ -1,1 +1,1 @@
-# tidymodels_dhi
+# Repo for tidymodels workflow on the Diabetes Health Indicators dataset
