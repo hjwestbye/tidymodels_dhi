@@ -1,5 +1,11 @@
-# create recipe
-dhi_recipe <- recipe(diabetes ~ ., data = dhi_training)
+# create a small version of the training data with stratified sampling
+dhi_training_small <- dhi_training %>%
+  group_by(diabetes) %>%
+  slice_sample(prop = 0.01) %>%
+  ungroup()
+
+# create recipe for tuning
+dhi_recipe <- recipe(diabetes ~ ., data = dhi_training_small)
 
 # create svm model
 dhi_svm <- svm_rbf(cost = tune(), rbf_sigma = tune()) %>%
@@ -17,21 +23,22 @@ dhi_param <- dhi_workflow %>%
 
 dhi_param <- dhi_param %>%
   update(
-    cost = cost(range = c(0.01, 100)), 
-    rbf_sigma = rbf_sigma(range = c(0.01, 100))
+    cost = cost(range = c(0.01, 10), trans = NULL), 
+    rbf_sigma = rbf_sigma(range = c(0.001, 2), trans = NULL)
   )
 
 # Create a regular grid
-dhi_grid <- grid_regular(dhi_param, levels = 10)
+dhi_grid <- grid_random(dhi_param, size = 100)
 
 # create 5-fold cross validation
-dhi_vfold <- vfold_cv(dhi_training, v = 5, strata = diabetes)
+dhi_vfold <- vfold_cv(dhi_training_small, v = 3, strata = diabetes)
 
 # tune model
 dhi_tune <- tune_grid(dhi_workflow,
                       resamples = dhi_vfold,
                       grid = dhi_grid,
-                      metrics = metric_set(roc_auc, pr_auc, accuracy, f_meas, mcc, sens, spec, ppv, npv))
+                      metrics = metric_set(roc_auc),
+                      control = control_grid(event_level = 'second', verbose = TRUE, save_pred = TRUE, save_workflow = TRUE))
 
 # print tuning results
 dhi_tune
@@ -53,6 +60,16 @@ dhi_best
 # update workflow with best model
 dhi_workflow <- dhi_workflow %>%
   finalize_workflow(dhi_best)
+
+# update recipe with full training dataset
+dhi_recipe <- dhi_recipe %>%
+  prep(data = dhi_training)
+
+# update workflow with full training dataset
+dhi_workflow <- dhi_workflow %>%
+  update_recipe(dhi_recipe)
+
+dhi_workflow
 
 # fit best model
 dhi_fit <- fit(dhi_workflow, data = dhi_training)

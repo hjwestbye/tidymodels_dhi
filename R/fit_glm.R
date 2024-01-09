@@ -48,6 +48,8 @@ cm
 
 summary(cm)
 
+# save confusion matrix
+save(cm, file = "results/dhi_cm_glm.RData")
 
 # plot ROC curve
 dhi_predictions %>%

@@ -6,8 +6,7 @@ df <- read_csv("data/diabetes_binary_health_indicators_BRFSS2015.csv")
 
 # clean data with janitor
 df <- df %>%
-  clean_names() %>%
-  remove_empty()
+  clean_names()
 
 # rename outcome column
 df <- df %>%
@@ -66,7 +65,5 @@ dhi_results <- tibble(model = character(),
 source("R/fit_glm.R")
 
 # save results dataframe
-save(dhi_results, file = "data/dhi_results.RData")
-
-source("R/libraries.R")
+save(dhi_results, file = "results/dhi_results.RData")
 
